@@ -18,9 +18,19 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Create SSH key
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_PRIVATE_KEY" > ../private.key
+          chmod 600 ../private.key
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+
       - name: Deploy to server
         run: |
-          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
           ssh -p 34873 -o "StrictHostKeyChecking no" root@5.161.42.171 << 'ENDSSH'
           cd /root/oam/oam-api
           git pull
