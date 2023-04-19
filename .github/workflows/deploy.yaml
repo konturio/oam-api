@@ -31,9 +31,6 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh -p 34873 -o "StrictHostKeyChecking no" root@5.161.42.171 << 'ENDSSH'
-          cd /root/oam/oam-api
-          git pull
-          cp index.js /tmp/test
+          ssh -p 33322 -o "StrictHostKeyChecking no" gis@geocint.kontur.io << 'ENDSSH'
           journalctl -n10 > /tmp/log
           ENDSSH
