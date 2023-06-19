@@ -3,10 +3,13 @@
  */
 
 "use strict";
+var path = require("path");
 
 console.log("Starting catalog worker...");
 
-require("dotenv").config();
+require("dotenv").config({
+  path: path.resolve(process.cwd(), process.env.DOT_ENV_FILENAME || ".env"),
+});
 
 var _ = require("lodash");
 var S3 = require("aws-sdk/clients/s3");
@@ -40,26 +43,30 @@ var consoleLog = function (err, msg) {
  * of buckets.
  */
 var getBucketList = function (cb) {
-  request.get(
-    {
-      json: true,
-      uri: config.oinRegisterUrl,
-    },
-    function (err, res, remoteData) {
-      if (err) {
-        return cb(err);
-      }
+  if (typeof config.oinRegisterUrl === "undefined") {
+    cb(null, [{ type: "s3", bucket_name: config.oinBucket }]);
+  } else {
+    request.get(
+      {
+        json: true,
+        uri: config.oinRegisterUrl,
+      },
+      function (err, res, remoteData) {
+        if (err) {
+          return cb(err);
+        }
 
-      if (res.statusCode !== 200) {
-        return console.error("Unable to get register list.");
+        if (res.statusCode !== 200) {
+          return console.error("Unable to get register list.");
+        }
+        var buckets = _.map(remoteData.nodes, function (node) {
+          return node.locations;
+        });
+        buckets = _.flatten(buckets);
+        cb(null, buckets);
       }
-      var buckets = _.map(remoteData.nodes, function (node) {
-        return node.locations;
-      });
-      buckets = _.flatten(buckets);
-      cb(null, buckets);
-    }
-  );
+    );
+  }
 };
 
 /**
@@ -189,10 +196,10 @@ cron.schedule(config.cronTime, function () {
 
 const {
   PGHOST,
+  PGPORT,
   PGUSER,
   PGPASSWORD,
   PGDATABASE,
-  PGPORT,
   PG_CRON_TIME = "* * * * *",
 } = process.env;
 
@@ -234,20 +241,25 @@ if (isPgEnabled) {
 
     const pgConnection = await pgCreateConnection();
 
+    const mosaicLayerId = config.oamMosacLayerId;
+
     try {
       await pgConnection.query("begin");
 
       await pgConnection.query(
-        "delete from layers_features where layer_id = (select id from layers where public_id = 'openaerialmap_geocint')"
+        `delete from layers_features where layer_id = (select id from layers where public_id = '${mosaicLayerId}')`
       );
 
       // TODO: there should be a better way to do bulk insert
-      const queryText =
-        "insert into public.layers_features (feature_id, layer_id, properties, geom, last_updated, zoom) values ($1, (select id from layers where public_id = 'openaerialmap_geocint'), $2, ST_Transform(ST_GeomFromGeoJSON($3), 4326), now(), 999)";
+      const queryText = `insert into public.layers_features (feature_id, layer_id, properties, geom, last_updated, zoom) values ($1, (select id from layers where public_id = '${mosaicLayerId}'), $2, ST_Transform(ST_GeomFromGeoJSON($3), 4326), now(), 999)`;
       for (const record of records) {
         const queryValues = [
           record._id,
-          JSON.stringify(record.properties),
+          JSON.stringify({
+            ...record.properties,
+            gsd: record.gsd,
+            uuid: record.uuid,
+          }),
           JSON.stringify(record.geojson),
         ];
 

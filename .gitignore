@@ -11,6 +11,7 @@ npm-debug.log
 .netbeans
 .env*
 !.env.sample
+!.env.local.sample
 .idea
 .node_history
 temp
