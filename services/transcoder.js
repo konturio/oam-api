@@ -59,7 +59,7 @@ var getSize = (sourceUrl, callback) => {
   var uri = url.parse(sourceUrl);
 
   switch (uri.protocol) {
-    case "s3:":
+    case 's3:':
       return s3.headObject({
         Bucket: uri.hostname,
         Key: uri.pathname.slice(1)
@@ -100,7 +100,7 @@ var guessMemoryAllocation = (sourceUrl, callback) =>
   });
 
 var batchTranscode = (jobName, input, output, callbackUrl, callback) =>
-  guessMemoryAllocation(input, (err, memory) =>
+  guessMemoryAllocation(input, (_, memory) =>
     batch.submitJob(
       {
         jobDefinition: config.batch.jobDefinition,
@@ -112,7 +112,12 @@ var batchTranscode = (jobName, input, output, callbackUrl, callback) =>
           callback_url: callbackUrl
         },
         containerOverrides: {
-          memory
+          'resourceRequirements': [
+            {
+              type: 'MEMORY',
+              value: memory
+            }
+          ]
         }
       },
       (err, data) => callback(err)
