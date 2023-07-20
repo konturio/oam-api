@@ -106,6 +106,7 @@ const config = {
     jobDefinition: process.env.AWS_BATCH_JD_NAME,
     jobQueue: process.env.AWS_BATCH_JQ_NAME
   },
+  maxBatchMemoryMB: process.env.MAX_BATCH_MEMORY_MB || 60000, // 30GB
 
   // TODO: Deprecate the following once user accounts have been implemented.
   // Credentials for Uploader Admin

@@ -94,7 +94,7 @@ var guessMemoryAllocation = (sourceUrl, callback) =>
     // optimistic about source encoding; assume it's the smallest it can be (but
     // cap allocated memory at 30GB)
     // provide a minimum for smaller images
-    var recommended = Math.max(3000, Math.min(30000, mbs * 10));
+    var recommended = Math.max(3000, Math.min(config.maxBatchMemoryMB, mbs * 10));
 
     return callback(null, recommended);
   });
