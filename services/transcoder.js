@@ -115,7 +115,7 @@ var batchTranscode = (jobName, input, output, callbackUrl, callback) =>
           'resourceRequirements': [
             {
               type: 'MEMORY',
-              value: memory
+              value: `${memory}`
             }
           ]
         }
